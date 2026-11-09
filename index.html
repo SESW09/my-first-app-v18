@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 수행평가 일정 관리 도우미</title>
+  
+  <meta name="theme-color" content="#4f46e5" />
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --warning: #f59e0b;
+      --warning-bg: #fffbeb;
+      --success: #10b981;
+      --ai-purple: #8b5cf6;
+      --radius: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 30px 16px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* 상단 헤더 */
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      margin-top: 6px;
+    }
+
+    /* 상단 유틸리티 바 */
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+
+    /* 카드 컨테이너 */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    /* 폼 입력 요소 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .col-span-2 {
+      grid-column: span 2;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background-color: #fff;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+
+    /* 버튼 스타일 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-block { width: 100%; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #0f766e; color: #fff; }
+    .btn-share { background: #0284c7; color: #fff; }
+    .btn-share:hover { background: #0369a1; }
+    .btn-sm { font-size: 0.78rem; padding: 6px 12px; border-radius: 8px; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-sub); }
+    .btn-outline:hover { background: #f1f5f9; color: var(--text-main); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-ai { background: var(--ai-purple); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    /* 과제 카드 UI */
+    .task-card {
+      position: relative;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .task-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .task-card.urgent-red {
+      border-left: 6px solid var(--danger);
+      background: #fffcfc;
+    }
+
+    .task-card.urgent-yellow {
+      border-left: 6px solid var(--warning);
+      background: #fffdfa;
+    }
+
+    .task-card.urgent-normal {
+      border-left: 6px solid var(--primary);
+    }
+
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .task-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 9999px;
+    }
+
+    .badge-dday-red { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+    .badge-dday-yellow { background: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
+    .badge-dday-blue { background: var(--primary-light); color: var(--primary); border: 1px solid #c7d2fe; }
+    .badge-score { background: #faf5ff; color: var(--ai-purple); border: 1px solid #e9d5ff; }
+    .badge-type { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    .task-meta {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .plan-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* AI 3단계 세부 체크리스트 */
+    .subtask-box {
+      background: #faf5ff;
+      border: 1px dashed #d8b4fe;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .subtask-header {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #6b21a8;
+      margin-bottom: 8px;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
+    .subtask-item input {
+      width: auto;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .loading-box {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-sub);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="brand-badge">✨ AI 스마트 학업 플래너</div>
+      <h1>수행평가 일정 관리 도우미</h1>
+      <p>우선순위 지수 분석과 맞춤형 일일 학습 시간 분배</p>
+    </header>
+
+    <!-- 상단 단톡방 공지 텍스트 복사 버튼 -->
+    <div class="top-actions">
+      <button type="button" class="btn btn-share" onclick="copyShareText()">
+        📢 반 톡방 공유용 텍스트 복사
+      </button>
+    </div>
+
+    <!-- 1. 새 수행평가 등록 카드 -->
+    <section class="card">
+      <div class="card-title">📝 새 수행평가 등록</div>
+      <form id="taskForm">
+        <div class="form-grid">
+          <div class="form-group col-span-2">
+            <label>과목 및 내용</label>
+            <input type="text" id="title" placeholder="예: 과학 탐구 보고서" required />
+          </div>
+
+          <!-- 수행평가 유형 선택 (일반 vs 온라인) -->
+          <div class="form-group">
+            <label>수행평가 유형</label>
+            <select id="taskType" onchange="updateDateLabel()">
+              <option value="일반" selected>일반 (오프라인/제출)</option>
+              <option value="온라인">온라인 (시험/온라인 제출)</option>
+            </select>
+          </div>
+
+          <!-- 요청하신 '날짜' 라벨 적용 -->
+          <div class="form-group">
+            <label id="dateLabel">날짜</label>
+            <input type="date" id="dueDate" required />
+          </div>
+
+          <div class="form-group">
+            <label>예상 소요 시간 (시간)</label>
+            <input type="number" id="estimatedHours" min="0.5" step="0.5" value="3" required />
+          </div>
+
+          <div class="form-group">
+            <label>진행 상태</label>
+            <select id="status">
+              <option value="시작 전">시작 전</option>
+              <option value="진행 중">진행 중</option>
+            </select>
+          </div>
+
+          <div class="form-group col-span-2">
+            <label>난이도</label>
+            <select id="difficulty">
+              <option value="1">하 (수월함)</option>
+              <option value="2" selected>중 (보통)</option>
+              <option value="3">상 (어려움/자료 많음)</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-block" style="margin-top: 10px;">
+          스프레드시트에 저장하기
+        </button>
+      </form>
+    </section>
+
+    <!-- 2. 가용 시간 설정 카드 -->
+    <section class="card">
+      <div class="card-title">⏱️ 오늘 공부 가능 시간</div>
+      <div class="form-group">
+        <label>하루에 수행평가에 투자 가능한 총 시간 (시간)</label>
+        <input type="number" id="dailyLimit" min="0.5" step="0.5" value="2.5" />
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" onclick="renderSchedule()">
+        일정 최적화 다시 계산하기
+      </button>
+    </section>
+
+    <!-- 3. 결과 리스트 카드 -->
+    <section class="card">
+      <div class="card-title">
+        <span>📋 우선순위 & 일일 계획</span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="fetchTasks()">새로고침</button>
+      </div>
+      <div id="statusIndicator" class="loading-box">구글 스프레드시트에서 데이터를 불러오는 중...</div>
+      <div id="taskList"></div>
+    </section>
+  </div>
+
+  <script>
+    // 본인의 Google Apps Script 웹 앱 URL
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3Y962-3dXeKsfQ2ObESti2pSojprNyBIDPVVlUfQD21yi_rHT7jirsBSad23jAZnD1A/exec";
+
+    let taskData = [];
+
+    // 브라우저 캐시 및 이전 서비스 워커 안전 초기화
+    (async function clearOldCache() {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (let reg of regs) { reg.unregister(); }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (let key of keys) { await caches.delete(key); }
+      }
+    })();
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // 날짜 기본값 설정 (오늘 + 2일)
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 2);
+      document.getElementById('dueDate').value = defaultDate.toISOString().split('T')[0];
+
+      fetchTasks();
+    });
+
+    // 유형 변경 시 라벨 텍스트 변경
+    function updateDateLabel() {
+      const type = document.getElementById("taskType").value;
+      const label = document.getElementById("dateLabel");
+      if (type === "온라인") {
+        label.textContent = "온라인 마감일";
+      } else {
+        label.textContent = "날짜";
+      }
+    }
+
+    // 1. 스프레드시트 데이터 조회 (GET)
+    async function fetchTasks() {
+      const indicator = document.getElementById("statusIndicator");
+      indicator.style.display = "block";
+      indicator.textContent = "최신 데이터를 불러오는 중...";
+
+      try {
+        const cacheBusterUrl = `${GAS_WEB_APP_URL}?t=${Date.now()}`;
+        const response = await fetch(cacheBusterUrl, { cache: "no-store" });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          taskData = result.data.map((item, idx) => {
+            // 로컬 스토리지에 저장된 AI 체크리스트 복원
+            const savedSubtasks = localStorage.getItem(`subtasks_${item.title}`);
+            // 온라인 수행평가 여부 확인 (제목에 [온라인] 표식이 있는지 또는 로컬 저장소 확인)
+            const isOnline = item.title.startsWith("[온라인]") || localStorage.getItem(`type_${item.title}`) === "온라인";
+            
+            return {
+              ...item,
+              id: idx,
+              rowIndex: item.rowIndex,
+              isOnline: isOnline,
+              subtasks: savedSubtasks ? JSON.parse(savedSubtasks) : []
+            };
+          });
+          indicator.style.display = "none";
+          renderSchedule();
+        } else {
+          indicator.textContent = "데이터를 가져오지 못했습니다.";
+        }
+      } catch (err) {
+        console.error("데이터 로드 실패:", err);
+        indicator.textContent = "구글 시트 연동 상태를 확인해 주세요.";
+      }
+    }
+
+    // 2. 신규 과제 등록 (POST)
+    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "스프레드시트에 기록 중...";
+
+      const taskType = document.getElementById("taskType").value;
+      let rawTitle = document.getElementById("title").value.trim();
+      
+      // 온라인 과제인 경우 제목 앞에 명확한 식별 태그 추가
+      if (taskType === "온라인" && !rawTitle.startsWith("[온라인]")) {
+        rawTitle = `[온라인] ${rawTitle}`;
+      }
+
+      const payload = {
+        action: "add",
+        title: rawTitle,
+        dueDate: document.getElementById("dueDate").value,
+        estimatedHours: document.getElementById("estimatedHours").value,
+        status: document.getElementById("status").value,
+        difficulty: document.getElementById("difficulty").value
+      };
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          // 유형 정보 로컬 저장
+          localStorage.setItem(`type_${rawTitle}`, taskType);
+          alert("스프레드시트에 안전하게 저장되었습니다!");
+          document.getElementById("taskForm").reset();
+          updateDateLabel();
+          await fetchTasks();
+        } else {
+          alert("저장 실패: " + result.message);
+        }
+      } catch (err) {
+        console.error("저장 통신 실패:", err);
+        alert("통신 중 오류가 발생했습니다.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "스프레드시트에 저장하기";
+      }
+    });
+
+    // 3. 과제 완료 처리 (POST)
+    async function completeTask(id) {
+      const target = taskData.find(t => t.id === id);
+      if (!target) return;
+
+      if (!confirm(`"${target.title}" 수행평가를 완료 처리할까요?\n스프레드시트의 상태가 '완료'로 변경됩니다.`)) {
+        return;
+      }
+
+      const indicator = document.getElementById("statusIndicator");
+      indicator.style.display = "block";
+      indicator.textContent = "스프레드시트에 완료 상태를 기록하는 중...";
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "complete",
+            rowIndex: target.rowIndex,
+            title: target.title
+          })
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          alert(`🎉 "${target.title}" 과제를 성공적으로 완료했습니다! 수고하셨어요.`);
+          await fetchTasks();
+        } else {
+          alert("완료 처리 실패: " + result.message);
+          indicator.style.display = "none";
+        }
+      } catch (err) {
+        console.error("완료 통신 오류:", err);
+        alert("서버와 통신 중 문제가 발생했습니다.");
+        indicator.style.display = "none";
+      }
+    }
+
+    // 4. 과제 삭제 (POST)
+    async function deleteTask(id) {
+      const target = taskData.find(t => t.id === id);
+      if (!target) return;
+
+      if (!confirm(`"${target.title}" 과제를 삭제하시겠습니까?\n스프레드시트의 해당 행(${target.rowIndex}행)이 완전히 삭제됩니다.`)) {
+        return;
+      }
+
+      const indicator = document.getElementById("statusIndicator");
+      indicator.style.display = "block";
+      indicator.textContent = "스프레드시트에서 삭제 처리 중...";
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "delete",
+            rowIndex: target.rowIndex,
+            title: target.title
+          })
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          alert("스프레드시트에서 성공적으로 삭제되었습니다!");
+          localStorage.removeItem(`subtasks_${target.title}`);
+          localStorage.removeItem(`type_${target.title}`);
+          await fetchTasks();
+        } else {
+          alert("삭제 실패: " + result.message);
+          indicator.style.display = "none";
+        }
+      } catch (err) {
+        console.error("삭제 실패:", err);
+        alert("삭제 요청 중 통신 오류가 발생했습니다.");
+        indicator.style.display = "none";
+      }
+    }
+
+    // 5. 우선순위 연산 및 화면 렌더링
+    function renderSchedule() {
+      const taskListEl = document.getElementById("taskList");
+      taskListEl.innerHTML = "";
+      const dailyLimit = parseFloat(document.getElementById("dailyLimit").value) || 2.0;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const activeTasks = taskData
+        .filter(t => t.status !== "완료" && t.dueDate)
+        .map(t => {
+          const due = new Date(t.dueDate);
+          due.setHours(0, 0, 0, 0);
+          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+          const daysLeft = diffDays <= 0 ? 1 : diffDays;
+          
+          const score = (parseFloat(t.estimatedHours) * parseInt(t.difficulty)) / daysLeft;
+          return { ...t, dDay: diffDays, score: score };
+        });
+
+      activeTasks.sort((a, b) => b.score - a.score);
+
+      if (activeTasks.length === 0) {
+        taskListEl.innerHTML = "<p style='text-align:center; color:#10b981; padding:24px;'>🎉 진행할 수행평가가 없습니다!</p>";
+        return;
+      }
+
+      let remainingDailyLimit = dailyLimit;
+
+      activeTasks.forEach((task, idx) => {
+        const item = document.createElement("div");
+
+        let borderClass = "urgent-normal";
+        let dDayBadge = `<span class="badge badge-dday-blue">D-${task.dDay}</span>`;
+
+        if (task.dDay <= 1) {
+          borderClass = "urgent-red";
+          dDayBadge = `<span class="badge badge-dday-red">🚨 긴급 D-${task.dDay <= 0 ? "DAY" : task.dDay}</span>`;
+        } else if (task.dDay <= 3) {
+          borderClass = "urgent-yellow";
+          dDayBadge = `<span class="badge badge-dday-yellow">⚠️ 주의 D-${task.dDay}</span>`;
+        }
+
+        item.className = `task-card ${borderClass}`;
+
+        // 오늘 가용 시간 기준 권장 분량 배분
+        let allocatedToday = 0;
+        if (remainingDailyLimit > 0) {
+          allocatedToday = Math.min(task.estimatedHours, remainingDailyLimit);
+          remainingDailyLimit -= allocatedToday;
+        }
+
+        // 온라인 여부에 따른 날짜 라벨 분기
+        const dateDisplayLabel = task.isOnline ? "💻 온라인 마감" : "📅 날짜";
+        const typeBadge = task.isOnline ? `<span class="badge badge-type">온라인</span>` : "";
+
+        // AI 세부 체크리스트 HTML 생성
+        let subtasksHtml = "";
+        if (task.subtasks && task.subtasks.length > 0) {
+          subtasksHtml = `
+            <div class="subtask-box">
+              <div class="subtask-header">🤖 AI 3단계 실행 가이드 (체크 시 자동 저장):</div>
+              ${task.subtasks.map((st, sIdx) => `
+                <div class="subtask-item">
+                  <input type="checkbox" id="chk_${task.id}_${sIdx}" ${st.done ? "checked" : ""} onchange="toggleSubtask(${task.id}, ${sIdx})" />
+                  <label for="chk_${task.id}_${sIdx}" style="${st.done ? "text-decoration:line-through;color:#94a3b8;" : "color:#374151;"}">
+                    ${st.text}
+                  </label>
+                </div>
+              `).join("")}
+            </div>
+          `;
+        }
+
+        item.innerHTML = `
+          <div class="task-header">
+            <span class="task-title">${idx + 1}. ${task.title}</span>
+            <div class="badges">
+              ${typeBadge}
+              ${dDayBadge}
+              <span class="badge badge-score">중요도 ${task.score.toFixed(1)}</span>
+            </div>
+          </div>
+          <div class="task-meta">
+            <span>${dateDisplayLabel}: <strong>${task.dueDate}</strong></span>
+            <span>⏳ 소요: <strong>${task.estimatedHours}시간</strong></span>
+            <span>⭐ 난이도: <strong>${task.difficulty}단계</strong></span>
+          </div>
+          <div class="plan-box">
+            👉 <strong>오늘 권장 분량:</strong> ${allocatedToday > 0 ? `<span style="color:var(--primary); font-weight:bold;">${allocatedToday.toFixed(1)}시간 집중하기</span>` : "내일 이후 착수 권장"}
+          </div>
+          ${subtasksHtml}
+          <div class="actions">
+            <button class="btn btn-success btn-sm" onclick="completeTask(${task.id})">✓ 완료</button>
+            <button class="btn btn-ai btn-sm" onclick="breakdownTask(${task.id})">🤖 AI 세부 계획</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id})">🗑 삭제</button>
+          </div>
+        `;
+
+        taskListEl.appendChild(item);
+      });
+    }
+
+    // 6. AI 3단계 세부 분할
+    function breakdownTask(id) {
+      const target = taskData.find(t => t.id === id);
+      if (!target) return;
+
+      const total = parseFloat(target.estimatedHours);
+      const s1 = (total * 0.3).toFixed(1);
+      const s2 = (total * 0.5).toFixed(1);
+      const s3 = (total * 0.2).toFixed(1);
+
+      target.subtasks = [
+        { text: `1단계: 자료 및 핵심 이론 조사 (${s1}시간)`, done: false },
+        { text: `2단계: 본문 및 과제 초안 작성 (${s2}시간)`, done: false },
+        { text: `3단계: 기준 검토 및 최종 퇴고 (${s3}시간)`, done: false }
+      ];
+
+      localStorage.setItem(`subtasks_${target.title}`, JSON.stringify(target.subtasks));
+      renderSchedule();
+    }
+
+    // 7. 세부 체크박스 상태 토글 및 저장
+    function toggleSubtask(taskId, subtaskIdx) {
+      const target = taskData.find(t => t.id === taskId);
+      if (target && target.subtasks[subtaskIdx]) {
+        target.subtasks[subtaskIdx].done = !target.subtasks[subtaskIdx].done;
+        localStorage.setItem(`subtasks_${target.title}`, JSON.stringify(target.subtasks));
+        renderSchedule();
+      }
+    }
+
+    // 8. 반 단톡방 공지용 텍스트 복사 (마감 일정 단어 제외 및 온라인 과제 맞춤형 분기)
+    function copyShareText() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const activeTasks = taskData
+        .filter(t => t.status !== "완료" && t.dueDate)
+        .map(t => {
+          const due = new Date(t.dueDate);
+          due.setHours(0, 0, 0, 0);
+          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+          return { ...t, dDay: diffDays };
+        })
+        .sort((a, b) => a.dDay - b.dDay);
+
+      if (activeTasks.length === 0) {
+        alert("공유할 남은 수행평가가 없습니다! 모두 완료 상태예요. 🎉");
+        return;
+      }
+
+      // 공지 텍스트 조립 ('마감 일정' 단어 제외)
+      let message = "📢 [우리 반 수행평가 현황 및 일정 안내]\n\n";
+
+      activeTasks.forEach((task, index) => {
+        let icon = "📘";
+        let dDayText = `D-${task.dDay}`;
+
+        if (task.dDay <= 1) {
+          icon = "🚨";
+          dDayText = task.dDay <= 0 ? "D-DAY" : `D-${task.dDay}`;
+        } else if (task.dDay <= 3) {
+          icon = "⚠️";
+        }
+
+        // 온라인 과제 여부에 따라 텍스트 서식 분기
+        if (task.isOnline) {
+          message += `${index + 1}. ${icon} ${task.title} (${dDayText}, ${task.dueDate} 온라인 마감)\n`;
+        } else {
+          message += `${index + 1}. ${icon} ${task.title} (${dDayText}, ${task.dueDate}까지)\n`;
+        }
+      });
+
+      message += "\n* 미리미리 준비해서 차질 없이 완수해요! 파이팅! ✨";
+
+      navigator.clipboard.writeText(message)
+        .then(() => {
+          alert("단톡방 공지용 텍스트가 클립보드에 복사되었습니다!\n원하는 채팅방에 바로 붙여넣기(Ctrl+V) 하세요. 👍");
+        })
+        .catch(err => {
+          console.error("클립보드 복사 실패:", err);
+          alert("클립보드 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.");
+        });
+    }
+  </script>
+</body>
+</html>
